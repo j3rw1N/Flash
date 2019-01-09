@@ -82,7 +82,14 @@ class SessionPool(object):
     def stream(self, url, begin, end, chunk_size, **kwargs):
         self._check_header_conflicts(kwargs)
         while begin <= end:
-            for chunk in self._stream(url, begin, end, chunk_size, **kwargs):
-                assert len(chunk) == chunk_size or begin + len(chunk) == end + 1
-                yield chunk
-                begin += chunk_size
+            try:
+                for chunk in self._stream(url, begin, end, chunk_size, **kwargs):
+                    assert len(chunk) == chunk_size or begin + len(chunk) == end + 1
+                    yield chunk
+                    begin += chunk_size
+            except requests.exceptions.RequestException as e:
+                logging.info('Request error, %s', e)
+                for chunk in self._stream(url, begin, end, chunk_size, **kwargs):
+                    assert len(chunk) == chunk_size or begin + len(chunk) == end + 1
+                    yield chunk
+                    begin += chunk_size
